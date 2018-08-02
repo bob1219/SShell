@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata)
 import System.IO.Error	(isFullError, isIllegalOperation, isPermissionError, isDoesNotExistError, isAlreadyInUseError)
 import SShell.Constant	(unknownException)
 
@@ -64,3 +64,12 @@ command_rmfile file =	(removeFile file)
 									| isIllegalOperation e	-> commandLineError "that operation is illegal"
 									| isPermissionError e	-> commandLineError "you do not have the permission"
 									| otherwise		-> unknownException e)
+
+command_cpfile :: FilePath -> FilePath -> IO ()
+command_cpfile src dst =	(copyFileWithMetadata src dst)
+					`catchIOError` (\e -> case e of _	| isDoesNotExistError e	-> commandLineError "that source-file does not exist"
+										| isAlreadyInUseError e	-> commandLineError "that files already in use"
+										| isFullError e		-> commandLineError "your device is full"
+										| isIllegalOperation e	-> commandLineError "that operation in illegal"
+										| isPermissionError e	-> commandLineError "you do not have the permission"
+										| otherwise		-> unknownException e)
