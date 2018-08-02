@@ -18,8 +18,8 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist)
-import System.IO.Error	(isFullError)
+import System.Directory	(doesFileExist, removeFile)
+import System.IO.Error	(isFullError, isIllegalOperation, isPermissionError, isDoesNotExistError, isAlreadyInUseError)
 import SShell.Constant	(unknownException)
 
 commandProcess :: [String] -> IO ()
@@ -56,3 +56,11 @@ command_mkfile file = do	exists <- doesFileExist file
 												| isIllegalOperation e	-> commandLineError "that operation is illegal"
 												| isPermissionError e	-> commandLineError "you do not have the permission"
 												| otherwise		-> unknownException e)
+
+command_rmfile :: FilePath -> IO ()
+command_rmfile file =	(removeFile file)
+				`catchIOError` (\e -> case e of _	| isDoesNotExistError e	-> commandLineError "that file does not exist"
+									| isAlreadyInUseError e	-> commandLineError "that file already in use"
+									| isIllegalOperation e	-> commandLineError "that operation is illegal"
+									| isPermissionError e	-> commandLineError "you do not have the permission"
+									| otherwise		-> unknownException e)
