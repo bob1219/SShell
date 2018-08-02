@@ -17,7 +17,10 @@
 
 module SShell.Command (commandProcess, tokenizeCommand) where
 
-import System.IO (hPutStrLn, stderr)
+import System.IO	(hPutStrLn, stderr)
+import System.Directory	(doesFileExist)
+import System.IO.Error	(isFullError)
+import SShell.Constant	(unknownException)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		= error "got empty list"
@@ -43,3 +46,13 @@ run tokens n f = if (length tokens) < n then commandLineError "few args" else f
 
 commandLineError :: String -> IO ()
 commandLineError message = hPutStrLn $ "Error: " ++ message
+
+command_mkfile :: FilePath -> IO ()
+command_mkfile file = do	exists <- doesFileExist file
+				if exists
+					then	commandLineError "that file already exists"
+					else	(writeFile file "")
+							`catchIOError` (\e -> case e of _	| isFullError e		-> commandLineError "your device is full"
+												| isIllegalOperation e	-> commandLineError "that operation is illegal"
+												| isPermissionError e	-> commandLineError "you do not have the permission"
+												| otherwise		-> unknownException e)
