@@ -36,7 +36,7 @@ main = do	hSetBuffering stdout NoBuffering
 
 loop :: IO ()
 loop = do	putChar '>'
-		tokens <- tokenizeCommand <$> getLine
+		(tokens <- tokenizeCommand <$> getLine)
 			`catchIOError` (\e ->	if isEOFError e
 							then loop
 							else unknownException e)
