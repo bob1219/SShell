@@ -19,8 +19,8 @@ module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata)
-import System.IO.Error	(isFullError, isIllegalOperation, isPermissionError, isDoesNotExistError, isAlreadyInUseError)
-import SShell.Constant	(unknownException)
+import System.IO.Error	(IOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
+import SShell.Constant	(unexceptedException)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		= error "got empty list"
@@ -45,31 +45,26 @@ run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f
 
 commandLineError :: String -> IO ()
-commandLineError message = hPutStrLn $ "Error: " ++ message
+commandLineError message = hPutStrLn stderr $ "Error: " ++ message
+
+exceptionHandling :: IOError -> IO ()
+exceptionHandling e = commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
+							| isDoesNotExistError e		-> "it does not exist"
+							| isAlreadyInUseError e		-> "it already in use"
+							| isFullError e			-> "your device is full"
+							| isEOFError e			-> error "eof error"
+							| isIllegalOperation e		-> error "your platform not supported in SShell"
+							| isPermissionError e		-> "you do not have the permission"
+							| otherwise			-> unexceptedException e
 
 command_mkfile :: FilePath -> IO ()
 command_mkfile file = do	exists <- doesFileExist file
 				if exists
-					then	commandLineError "that file already exists"
-					else	(writeFile file "")
-							`catchIOError` (\e -> case e of _	| isFullError e		-> commandLineError "your device is full"
-												| isIllegalOperation e	-> commandLineError "that operation is illegal"
-												| isPermissionError e	-> commandLineError "you do not have the permission"
-												| otherwise		-> unknownException e)
+					then commandLineError "that file already exists"
+					else (writeFile file "") `catchIOError` exceptionHandling
 
 command_rmfile :: FilePath -> IO ()
-command_rmfile file =	(removeFile file)
-				`catchIOError` (\e -> case e of _	| isDoesNotExistError e	-> commandLineError "that file does not exist"
-									| isAlreadyInUseError e	-> commandLineError "that file already in use"
-									| isIllegalOperation e	-> commandLineError "that operation is illegal"
-									| isPermissionError e	-> commandLineError "you do not have the permission"
-									| otherwise		-> unknownException e)
+command_rmfile file = (removeFile file) `catchIOError` exceptionHandling
 
 command_cpfile :: FilePath -> FilePath -> IO ()
-command_cpfile src dst =	(copyFileWithMetadata src dst)
-					`catchIOError` (\e -> case e of _	| isDoesNotExistError e	-> commandLineError "that source-file does not exist"
-										| isAlreadyInUseError e	-> commandLineError "that files already in use"
-										| isFullError e		-> commandLineError "your device is full"
-										| isIllegalOperation e	-> commandLineError "that operation in illegal"
-										| isPermissionError e	-> commandLineError "you do not have the permission"
-										| otherwise		-> unknownException e)
+command_cpfile src dst = (copyFileWithMetadata src dst) `catchIOError` exceptionHandling
