@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory)
 import System.IO.Error	(IOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException)
 
@@ -74,3 +74,6 @@ command_renfile src dst = (renameFile src dst) `catchIOError` exceptionHandling
 
 command_mkdir :: FilePath -> IO ()
 command_mkdir dir = (createDirectory dir) `catchIOError` exceptionHandling
+
+command_rmdir :: FilePath -> IO ()
+command_rmdir dir = (removeDirectory dir) `catchIOError` exceptionHandling
