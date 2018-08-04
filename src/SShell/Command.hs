@@ -68,3 +68,6 @@ command_rmfile file = (removeFile file) `catchIOError` exceptionHandling
 
 command_cpfile :: FilePath -> FilePath -> IO ()
 command_cpfile src dst = (copyFileWithMetadata src dst) `catchIOError` exceptionHandling
+
+command_renfile :: FilePath -> FilePath -> IO ()
+command_renfile src dst = (renameFile src dst) `catchIOError` exceptionHandling
