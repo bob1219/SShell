@@ -23,5 +23,5 @@ import Control.Exception	(displayException)
 version :: String
 version = "1.0.0"
 
-unknownException :: IOError -> a
-unknownException e = error $ "unknown exception: " ++ (displayException e)
+unexceptedException :: IOError -> a
+unexceptedException e = error $ "unexcepted exception occured: " ++ (displayException e)
