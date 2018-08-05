@@ -19,8 +19,8 @@ module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory)
-import SShell.Constant	(generateErrorMessage)
-import System.IO.Error	(catchIOError)
+import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
+import SShell.Constant	(unexceptedException)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -40,7 +40,15 @@ commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command
 							"version"	-> command_version
 							"exit"		-> command_exit
 							_		-> run tokens 2 $ exec (token:tokens))
-						`catchIOError` (commandLineError . generateErrorMessage)
+						`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
+													| isDoesNotExistError e		-> "it does not exist"
+													| isAlreadyInUseError e		-> "it is already in use"
+													| isFullError e			-> "your device is full"
+													| isEOFError e			-> "eof error"
+													| isIllegalOperation e		-> error "your platform is not supported in SShell"
+													| isPermissionError e		-> "you do not have the permission"
+													| otherwise			-> unexceptedException e)
+
 
 run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f

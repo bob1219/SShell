@@ -18,7 +18,7 @@
 module Main (main) where
 
 import System.IO	(hSetBuffering, stdout)
-import SShell.Constant	(version, unknownException)
+import SShell.Constant	(version, unexceptedException)
 import SShell.Command	(tokenizeCommand, commandProcess)
 import System.IO.Error	(catchIOError, isEOFError)
 
@@ -39,7 +39,7 @@ loop = do	putChar '>'
 		(tokens <- tokenizeCommand <$> getLine)
 			`catchIOError` (\e ->	if isEOFError e
 							then loop
-							else unknownException e)
+							else unexceptedException e)
 
 		if null tokens
 			then loop
