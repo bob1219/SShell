@@ -62,15 +62,18 @@ command_mkfile file = do	exists <- doesFileExist file
 					then commandLineError "that file already exists"
 					else writeFile file ""
 
-command_rmfile :: FilePath -> IO ()
-command_rmfile file = do	putStrLn $ "Are you realy remove file \"" ++ file ++ "\"? (y/n)"
+checkAndDo :: String -> IO () -> IO ()
+checkAndDo message f = do	putStrLn $ message ++ " (y/n)"
 				loop
 	where
-		loop = do	putStr ">"
-				realy <- getChar
-				case realy of	'y'	-> removeFile file
+		loop = do	putChar '>'
+				answer <- getChar
+				case answer of	'y'	-> f
 						'n'	-> return ()
 						_	-> loop
+
+command_rmfile :: FilePath -> IO ()
+command_rmfile file = checkAndDo ("Are you realy remove file \"" ++ file ++ "\"?") $ removeFile file
 
 command_cpfile :: FilePath -> FilePath -> IO ()
 command_cpfile = copyFileWithMetadata
@@ -82,4 +85,4 @@ command_mkdir :: FilePath -> IO ()
 command_mkdir = createDirectory
 
 command_rmdir :: FilePath -> IO ()
-command_rmdir = removeDirectory
+command_rmdir dir = checkAndDo ("Do you really want to remove directory \"" ++ dir ++ "\"?") $ removeDirectory dir
