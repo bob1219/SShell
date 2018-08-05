@@ -63,7 +63,14 @@ command_mkfile file = do	exists <- doesFileExist file
 					else writeFile file ""
 
 command_rmfile :: FilePath -> IO ()
-command_rmfile = removeFile
+command_rmfile file = do	putStrLn $ "Are you realy remove file \"" ++ file ++ "\"? (y/n)"
+				loop
+	where
+		loop = do	putStr ">"
+				realy <- getChar
+				case realy of	'y'	-> removeFile file
+						'n'	-> return ()
+						_	-> loop
 
 command_cpfile :: FilePath -> FilePath -> IO ()
 command_cpfile = copyFileWithMetadata
