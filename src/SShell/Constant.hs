@@ -17,11 +17,21 @@
 
 module SShell.Constant where
 
-import System.IO.Error		(IOError)
+import System.IO.Error		(IOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import Control.Exception	(displayException)
 
 version :: String
 version = "1.0.0"
 
+generateErrorMessage :: IOError -> String
+generateErrorMessage e = case e of _	| isAlreadyExistsError e	-> "it already exists"
+					| isDoesNotExistError e		-> "it does not exist"
+					| isAlreadyInUseError e		-> "it is already in use"
+					| isFullError e			-> "your device is full"
+					| isEOFError e			-> "eof error"
+					| isIllegalOperation e		-> error "your platform is not supported in SShell"
+					| isPermissionError e		-> "you do not have the permission"
+					| otherwise			-> unexceptedException e
+
 unexceptedException :: IOError -> a
-unexceptedException e = error $ "unexcepted exception occured: " ++ (displayException e)
+unexceptedException e = error $ "an unexcepted exception occured: " ++ (displayException e)
