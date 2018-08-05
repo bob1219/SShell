@@ -17,13 +17,14 @@
 
 module Main (main) where
 
-import System.IO	(hSetBuffering, stdout)
+import System.IO	(hSetBuffering, stdout, stdin)
 import SShell.Constant	(version, unexceptedException)
 import SShell.Command	(tokenizeCommand, commandProcess)
 import System.IO.Error	(catchIOError, isEOFError)
 
 main :: IO ()
 main = do	hSetBuffering stdout NoBuffering
+		hSetBuffering stdin LineBuffering
 		putStrLn $ "SShell Version " ++ version
 		putStrLn "Copyright 2018 Daiki Yoshida"
 		putChar '\n'
