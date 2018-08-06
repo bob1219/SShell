@@ -21,6 +21,7 @@ import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException)
+import Text.Read	(readMaybe)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -122,3 +123,12 @@ command_chcwd = setCurrentDirectory
 
 command_pcwd :: IO ()
 command_pcwd = getCurrentDirectory >>= putStrLn
+
+command_path :: [String] -> IO ()
+command_path []		= error "got empty list"
+command_path (arg:args)	= case arg of	"list"	-> command_path_list
+					"add"	-> run args 1 (command_path_add $ args !! 0)
+					"clear"	-> command_path_clear
+					"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n
+												Nothing	-> commandLineError "invalid number"
+					_	-> commandLineError "unknown command"
