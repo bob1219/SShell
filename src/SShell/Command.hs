@@ -22,6 +22,7 @@ import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, rename
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException, version)
 import Text.Read	(readMaybe)
+import System.Exit	(exitSuccess)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -165,3 +166,6 @@ command_list dir = listDirectory dir >>= loop
 
 command_version :: IO ()
 command_version = putStrLn version
+
+command_exit :: IO a
+command_exit = exitSuccess
