@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException)
 
@@ -86,3 +86,23 @@ command_mkdir = createDirectory
 
 command_rmdir :: FilePath -> IO ()
 command_rmdir dir = checkAndDo ("Do you really want to remove directory \"" ++ dir ++ "\"?") $ removeDirectory dir
+
+command_cpdir :: FilePath -> FilePath -> IO ()
+command_cpdir src dst = do	srcExists <- doesDirectoryExist src
+				if not srcExists
+					then commandLineError "it does not exist"
+					else do	dstExists <- doesDirectoryExist dst
+						if not dstExists
+							then createDirectory dst
+							else return ()
+						listDirectory src >>= loop src dst
+	where
+		loop _ _ []			= return ()
+		loop src dst (file:files)	= do	isFile <- doesFileExist src
+							if isFile
+								then copyFileWithMetadata newsrc newdst
+								else command_cpdir newsrc dst
+							loop src dst files
+			where
+				newsrc = src ++ "/" ++ file
+				newdst = dst ++ "/" ++ file
