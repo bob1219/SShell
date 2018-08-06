@@ -20,7 +20,7 @@ module SShell.Command (commandProcess, tokenizeCommand) where
 import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
-import SShell.Constant	(unexceptedException)
+import SShell.Constant	(unexceptedException, version)
 import Text.Read	(readMaybe)
 
 commandProcess :: [String] -> IO ()
@@ -162,3 +162,6 @@ command_list dir = listDirectory dir >>= loop
 		loop (file:files)	= do	isFile <- doesFileExist (dir ++ "/" ++ file)
 						putStrLn $ (if isFile then "file" else "dir") ++ ":\t" ++ file
 						loop files
+
+command_version :: IO ()
+command_version = putStrLn version
