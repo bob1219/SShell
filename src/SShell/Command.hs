@@ -141,3 +141,6 @@ command_path_list = command_view pathFileName
 
 command_path_add :: FilePath -> IO ()
 command_path_add dir = appendFile pathFileName (dir ++ "\n")
+
+command_path_clear :: IO ()
+command_path_clear = writeFile pathFileName ""
