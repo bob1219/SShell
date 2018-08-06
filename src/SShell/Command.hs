@@ -23,6 +23,7 @@ import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError,
 import SShell.Constant	(unexceptedException, version)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
+import System.Process	(createProcess, waitForProcess)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -169,3 +170,9 @@ command_version = putStrLn version
 
 command_exit :: IO a
 command_exit = exitSuccess
+
+command_exec :: [String] -> IO ()
+command_exec (software:args) = case pathProcess software of	Just software'	-> do	(_, _, _, handle) <- createProcess (proc software' args)
+											waitForProcess handle
+											return ()
+								Nothing		-> commandLineError "that command or software not found"
