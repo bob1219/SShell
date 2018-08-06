@@ -109,3 +109,10 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 
 command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
+
+command_view :: FilePath -> IO ()
+command_view file = (lines <$> readFile file) >>= loop 1
+	where
+		loop _ []		= return ()
+		loop n (line:lines)	= do	putStrLn $ (show n) ++ ":\t" ++ line
+						loop (n + 1) lines
