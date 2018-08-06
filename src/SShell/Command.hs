@@ -37,7 +37,7 @@ commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command
 							"chcwd"		-> run tokens 1 (command_chcwd $ tokens !! 0)
 							"pcwd"		-> command_pcwd
 							"path"		-> run tokens 2 $ command_path tokens
-							"list"		-> run tokens 2 (command_list (tokens !! 0) (tokens !! 1))
+							"list"		-> run tokens 1 (command_list $ tokens !! 0)
 							"version"	-> command_version
 							"exit"		-> command_exit
 							_		-> run tokens 2 $ exec (token:tokens))
@@ -154,3 +154,11 @@ command_path_del n =	if n < 1 || n > (length n)
 				else (readFile pathFilename) >>= ((writeFile pathFileName) . unlines . (f n) . lines)
 	where
 		f x list = (take (x - 1) list) ++ (drop x list)
+
+command_list :: FilePath -> IO ()
+command_list dir = listDirectory dir >>= loop
+	where
+		loop []			= return ()
+		loop (file:files)	= do	isFile <- doesFileExist (dir ++ "/" ++ file)
+						putStrLn $ (if isFile then "file" else "dir") ++ ":\t" ++ file
+						loop files
