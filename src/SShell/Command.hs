@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException)
 
@@ -106,3 +106,6 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 			where
 				newsrc = src ++ "/" ++ file
 				newdst = dst ++ "/" ++ file
+
+command_rendir :: FilePath -> FilePath -> IO ()
+command_rendir = renameDirectory
