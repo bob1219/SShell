@@ -147,3 +147,10 @@ command_path_add dir = do	isAlreadyFound <- find dir (lines <$> readFile pathFil
 
 command_path_clear :: IO ()
 command_path_clear = writeFile pathFileName ""
+
+command_path_del :: Integer -> IO ()
+command_path_del n =	if n < 1 || n > (length n)
+				then commandLineError "invalid number"
+				else (readFile pathFilename) >>= ((writeFile pathFileName) . unlines . (f n) . lines)
+	where
+		f x list = (take (x - 1) list) ++ (drop x list)
