@@ -133,7 +133,7 @@ command_path (arg:args)	= case arg of	"list"	-> command_path_list
 					"clear"	-> command_path_clear
 					"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n
 												Nothing	-> commandLineError "invalid number"
-					_	-> commandLineError "unknown command"
+					_	-> commandLineError "that command not found"
 
 pathFileName :: FilePath
 pathFileName = "./../data/PATH"
