@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException)
 
@@ -119,3 +119,6 @@ command_view file = (lines <$> readFile file) >>= loop 1
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
+
+command_pcwd :: IO ()
+command_pcwd = getCurrentDirectory >>= putStrLn
