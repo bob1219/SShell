@@ -18,12 +18,13 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.IO	(hPutStrLn, stderr)
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException, version)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
 import System.Process	(createProcess, waitForProcess)
+import System.FilePath	(isAbsolute)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -138,11 +139,14 @@ command_path (arg:args)	= case arg of	"list"	-> command_path_list
 pathFileName :: FilePath
 pathFileName = "./../data/PATH"
 
+getPaths :: IO [FilePath]
+getPaths = lines <$> readFile pathFileName
+
 command_path_list :: IO ()
 command_path_list = command_view pathFileName
 
 command_path_add :: FilePath -> IO ()
-command_path_add dir = do	isAlreadyFound <- find dir (lines <$> readFile pathFileName)
+command_path_add dir = do	isAlreadyFound <- find dir <$> getPaths
 				if isAlreadyFound
 					then commandLineError "it is already found in the paths"
 					else appendFile pathFileName (dir ++ "\n")
@@ -178,3 +182,37 @@ command_exec (software:args)	= do	software' <- pathProcess software
 											waitForProcess handle
 											return ()
 								Nothing		-> commandLineError "that command or software not found"
+
+pathProcess :: FilePath -> IO (Maybe FilePath)
+pathProcess software = do	isabs <- isAbsolute software
+				if isabs
+					then	do	exists <- doesFileExist software
+							if exists
+								then	return $ Just software
+								else	let software' = software ++ exeExtension
+									in do	exists' <- doesFileExist software'
+										if exists'
+											then return $ Just software'
+											else return Nothing
+					else	let software' = "./" ++ software
+						in do	exists <- doesFileExist software'
+							if exists
+								then	return $ Just software'
+								else	let software'' = software' ++ exeExtension
+									in do	exists' <- doesFileExist software''
+										if exists'
+											then return $ Just software''
+											else do	software''' <- loop software <$> getPaths
+												case software''' of	Just _	-> return software'''
+															Nothing	-> return Nothing
+	where
+		loop _ []			= return Nothing
+		loop software (path:paths)	= do	let software' = path ++ "/" ++ software
+							exists <- doesFileExist software'
+							if exists
+								then return $ Just software'
+								else do	let software'' = software' ++ exeExtension
+									exists' <- doesFileExist software''
+									if exists'
+										then return $ Just software''
+										else loop software paths
