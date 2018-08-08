@@ -17,7 +17,6 @@
 
 module SShell.Command (commandProcess, tokenizeCommand) where
 
-import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException, version, commandLineError)
@@ -112,7 +111,7 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
 
 command_view :: FilePath -> IO ()
-command_view file = (lines <$> readFile file) >>= loop 1
+command_view file = (lines <$> readFile file) >>= loop (1 :: Integer)
 	where
 		loop _ []	= return ()
 		loop n (x:xs)	= do	putStrLn $ (show n) ++ ":\t" ++ x
@@ -177,7 +176,7 @@ exec :: [String] -> IO ()
 exec []			= error "got empty list"
 exec (software:args)	= do	software' <- pathProcess software
 				case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
-										waitForProcess handle
+										_ <- waitForProcess handle
 										return ()
 							Nothing		-> commandLineError "that command or software not found"
 
