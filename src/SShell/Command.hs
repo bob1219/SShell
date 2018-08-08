@@ -20,10 +20,10 @@ module SShell.Command (commandProcess, tokenizeCommand) where
 import System.IO	(hPutStrLn, stderr)
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
-import SShell.Constant	(unexceptedException, version)
+import SShell.Constant	(unexceptedException, version, commandLineError)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
-import System.Process	(createProcess, waitForProcess)
+import System.Process	(createProcess, waitForProcess, proc)
 import System.FilePath	(isAbsolute)
 
 commandProcess :: [String] -> IO ()
@@ -56,9 +56,6 @@ commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command
 
 run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f
-
-commandLineError :: String -> IO ()
-commandLineError message = hPutStrLn stderr $ "Error: " ++ message
 
 command_mkfile :: FilePath -> IO ()
 command_mkfile file = do	exists <- doesFileExist file
@@ -102,14 +99,14 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 						listDirectory src >>= loop src dst
 	where
 		loop _ _ []			= return ()
-		loop src dst (file:files)	= do	isFile <- doesFileExist src
+		loop src' dst' (file:files)	= do	isFile <- doesFileExist src'
 							if isFile
 								then copyFileWithMetadata newsrc newdst
-								else command_cpdir newsrc dst
+								else command_cpdir newsrc dst'
 							loop src dst files
 			where
-				newsrc = src ++ "/" ++ file
-				newdst = dst ++ "/" ++ file
+				newsrc = src' ++ "/" ++ file
+				newdst = dst' ++ "/" ++ file
 
 command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
@@ -117,9 +114,9 @@ command_rendir = renameDirectory
 command_view :: FilePath -> IO ()
 command_view file = (lines <$> readFile file) >>= loop 1
 	where
-		loop _ []		= return ()
-		loop n (line:lines)	= do	putStrLn $ (show n) ++ ":\t" ++ line
-						loop (n + 1) lines
+		loop _ []	= return ()
+		loop n (x:xs)	= do	putStrLn $ (show n) ++ ":\t" ++ x
+					loop (n + 1) xs
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
@@ -146,7 +143,7 @@ command_path_list :: IO ()
 command_path_list = command_view pathFileName
 
 command_path_add :: FilePath -> IO ()
-command_path_add dir = do	isAlreadyFound <- find dir <$> getPaths
+command_path_add dir = do	isAlreadyFound <- elem dir <$> getPaths
 				if isAlreadyFound
 					then commandLineError "it is already found in the paths"
 					else appendFile pathFileName (dir ++ "\n")
@@ -154,10 +151,11 @@ command_path_add dir = do	isAlreadyFound <- find dir <$> getPaths
 command_path_clear :: IO ()
 command_path_clear = writeFile pathFileName ""
 
-command_path_del :: Integer -> IO ()
-command_path_del n =	if n < 1 || n > (length n)
+command_path_del :: Int -> IO ()
+command_path_del n = do	paths <- getPaths
+			if n < 1 || n > (length paths)
 				then commandLineError "invalid number"
-				else (readFile pathFilename) >>= ((writeFile pathFileName) . unlines . (f n) . lines)
+				else (writeFile pathFileName) . unlines . (f n) $ paths
 	where
 		f x list = (take (x - 1) list) ++ (drop x list)
 
@@ -175,17 +173,16 @@ command_version = putStrLn version
 command_exit :: IO a
 command_exit = exitSuccess
 
-command_exec :: [String] -> IO ()
-command_exec []			= error "got empty list"
-command_exec (software:args)	= do	software' <- pathProcess software
-					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
-											waitForProcess handle
-											return ()
-								Nothing		-> commandLineError "that command or software not found"
+exec :: [String] -> IO ()
+exec []			= error "got empty list"
+exec (software:args)	= do	software' <- pathProcess software
+				case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
+										waitForProcess handle
+										return ()
+							Nothing		-> commandLineError "that command or software not found"
 
 pathProcess :: FilePath -> IO (Maybe FilePath)
-pathProcess software = do	isabs <- isAbsolute software
-				if isabs
+pathProcess software = do	if isAbsolute software
 					then	do	exists <- doesFileExist software
 							if exists
 								then	return $ Just software
@@ -202,17 +199,38 @@ pathProcess software = do	isabs <- isAbsolute software
 									in do	exists' <- doesFileExist software''
 										if exists'
 											then return $ Just software''
-											else do	software''' <- loop software <$> getPaths
+											else do	software''' <- getPaths >>= loop software
 												case software''' of	Just _	-> return software'''
 															Nothing	-> return Nothing
 	where
 		loop _ []			= return Nothing
-		loop software (path:paths)	= do	let software' = path ++ "/" ++ software
-							exists <- doesFileExist software'
+		loop software' (path:paths)	= do	let software'' = path ++ "/" ++ software'
+							exists <- doesFileExist software''
 							if exists
-								then return $ Just software'
-								else do	let software'' = software' ++ exeExtension
-									exists' <- doesFileExist software''
+								then return $ Just software''
+								else do	let software''' = software'' ++ exeExtension
+									exists' <- doesFileExist software'''
 									if exists'
-										then return $ Just software''
-										else loop software paths
+										then return $ Just software'''
+										else loop software' paths
+
+tokenizeCommand :: String -> Maybe [String]
+tokenizeCommand command = loop command False False "" []
+	where
+		loop [] _ _ _ result				= Just result
+		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
+													then loop cs isQuoted False (temp ++ ['\'']) result
+													else loop cs (not isQuoted) False "" (result ++ [temp])
+										'\\'	->	if isEscaped
+													then	loop cs True False (temp ++ ['\\']) result
+													else	if isQuoted
+															then loop cs True True temp result
+															else loop cs False False (temp ++ ['\\']) result
+										' '	->	if isEscaped
+													then	Nothing
+													else	if isQuoted
+															then loop cs True False (temp ++ [' ']) result
+															else loop cs False False "" (result ++ [temp])
+										_	->	if isEscaped
+													then Nothing
+													else loop cs isQuoted False (temp ++ [c]) result

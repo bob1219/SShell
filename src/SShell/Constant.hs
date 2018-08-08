@@ -19,9 +19,13 @@ module SShell.Constant where
 
 import System.IO.Error		(IOError)
 import Control.Exception	(displayException)
+import System.IO		(hPutStrLn, stderr)
 
 version :: String
 version = "1.0.0"
 
 unexceptedException :: IOError -> a
 unexceptedException e = error $ "an unexcepted exception occured: " ++ (displayException e)
+
+commandLineError :: String -> IO ()
+commandLineError message = hPutStrLn stderr $ "Error: " ++ message
