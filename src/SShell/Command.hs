@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
-import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
+import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError, ioError)
 import SShell.Constant	(unexceptedException, version, commandLineError)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
@@ -42,7 +42,7 @@ commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command
 							"list"		-> run tokens 1 (command_list $ tokens !! 0)
 							"version"	-> command_version
 							"exit"		-> command_exit
-							_		-> run tokens 2 $ exec (token:tokens))
+							_		-> exec (token:tokens))
 						`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
 													| isDoesNotExistError e		-> "it does not exist"
 													| isAlreadyInUseError e		-> "it is already in use"
@@ -136,7 +136,10 @@ pathFileName :: FilePath
 pathFileName = "./../data/PATH"
 
 getPaths :: IO [FilePath]
-getPaths = lines <$> readFile pathFileName
+getPaths =	(lines <$> readFile pathFileName)
+			`catchIOError` (\e ->	if isDoesNotExistError e
+							then return []
+							else ioError e)
 
 command_path_list :: IO ()
 command_path_list = command_view pathFileName
@@ -198,7 +201,7 @@ pathProcess software = do	if isAbsolute software
 									in do	exists' <- doesFileExist software''
 										if exists'
 											then return $ Just software''
-											else do	software''' <- getPaths >>= loop software
+											else do	software''' <- (getPaths >>= loop software)
 												case software''' of	Just _	-> return software'''
 															Nothing	-> return Nothing
 	where
