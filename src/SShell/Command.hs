@@ -24,6 +24,7 @@ import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
 import System.Process	(createProcess, waitForProcess, proc)
 import System.FilePath	(isAbsolute)
+import System.IO	(openFile, IOMode(ReadMode), hGetContents)
 
 commandProcess :: [String] -> IO ()
 commandProcess []		=	error "got empty list"
@@ -111,7 +112,7 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
 
 command_view :: FilePath -> IO ()
-command_view file = (lines <$> readFile file) >>= view 1
+command_view file = (readFile file) >>= ((view 1) . lines)
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
@@ -132,7 +133,7 @@ pathFileName :: FilePath
 pathFileName = "./../data/PATH"
 
 getPaths :: IO [FilePath]
-getPaths =	(lines <$> readFile pathFileName)
+getPaths =	(lines <$> ((openFile pathFileName ReadMode) >>= hGetContents))
 			`catchIOError` (\e ->	if isDoesNotExistError e
 							then return []
 							else ioError e)
