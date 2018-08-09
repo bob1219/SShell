@@ -63,7 +63,7 @@ command_mkfile file = do	exists <- doesFileExist file
 					else writeFile file ""
 
 checkAndDo :: String -> IO () -> IO ()
-checkAndDo message f = do	putStrLn $ message ++ " (y/n)"
+checkAndDo message f = do	putStrLn $ "Do you really want to " ++ message ++ "? (y/n)"
 				loop
 	where
 		loop = do	putChar '>'
@@ -73,7 +73,7 @@ checkAndDo message f = do	putStrLn $ message ++ " (y/n)"
 						_	-> loop
 
 command_rmfile :: FilePath -> IO ()
-command_rmfile file = checkAndDo ("Are you realy remove file \"" ++ file ++ "\"?") $ removeFile file
+command_rmfile file = checkAndDo ("remove file \"" ++ file ++ "\"") $ removeFile file
 
 command_cpfile :: FilePath -> FilePath -> IO ()
 command_cpfile = copyFileWithMetadata
@@ -85,7 +85,7 @@ command_mkdir :: FilePath -> IO ()
 command_mkdir = createDirectory
 
 command_rmdir :: FilePath -> IO ()
-command_rmdir dir = checkAndDo ("Do you really want to remove directory \"" ++ dir ++ "\"?") $ removeDirectoryRecursive dir
+command_rmdir dir = checkAndDo ("remove directory \"" ++ dir ++ "\"") $ removeDirectoryRecursive dir
 
 command_cpdir :: FilePath -> FilePath -> IO ()
 command_cpdir src dst = do	srcExists <- doesDirectoryExist src
