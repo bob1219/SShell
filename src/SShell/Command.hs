@@ -219,10 +219,11 @@ pathProcess software = do	if isAbsolute software
 tokenizeCommand :: String -> Maybe [String]
 tokenizeCommand command = loop command False False "" []
 	where
-		loop [] _ _ temp result				= Just (if temp == "" then result else (result ++ [temp]))
+		loop [] isQuoted _ temp result			| isQuoted	= Nothing
+								| otherwise	= Just (if temp == "" then result else (result ++ [temp]))
 		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
-													then loop cs isQuoted False (temp ++ ['\'']) result
-													else loop cs (not isQuoted) False "" (result ++ [temp])
+													then loop cs True False (temp ++ ['\'']) result
+													else loop cs (not isQuoted) False "" (result ++ (if temp == "" then [] else [temp]))
 										'\\'	->	if isEscaped
 													then	loop cs True False (temp ++ ['\\']) result
 													else	if isQuoted
@@ -232,7 +233,7 @@ tokenizeCommand command = loop command False False "" []
 													then	Nothing
 													else	if isQuoted
 															then loop cs True False (temp ++ [' ']) result
-															else loop cs False False "" (if temp == "" then result else (result ++ [temp]))
+															else loop cs False False "" (if temp == "" then result else result ++ (if temp == "" then [] else [temp]))
 										_	->	if isEscaped
 													then Nothing
 													else loop cs isQuoted False (temp ++ [c]) result
