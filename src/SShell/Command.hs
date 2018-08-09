@@ -67,9 +67,9 @@ checkAndDo message f = do	putStrLn $ message ++ " (y/n)"
 				loop
 	where
 		loop = do	putChar '>'
-				answer <- getChar
-				case answer of	'y'	-> f
-						'n'	-> return ()
+				answer <- getLine
+				case answer of	"y"	-> f
+						"n"	-> return ()
 						_	-> loop
 
 command_rmfile :: FilePath -> IO ()
