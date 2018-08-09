@@ -17,7 +17,7 @@
 
 module SShell.Command (commandProcess, tokenizeCommand) where
 
-import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectory, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
+import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectoryRecursive, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
 import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError, ioError)
 import SShell.Constant	(unexceptedException, version, commandLineError)
 import Text.Read	(readMaybe)
@@ -85,7 +85,7 @@ command_mkdir :: FilePath -> IO ()
 command_mkdir = createDirectory
 
 command_rmdir :: FilePath -> IO ()
-command_rmdir dir = checkAndDo ("Do you really want to remove directory \"" ++ dir ++ "\"?") $ removeDirectory dir
+command_rmdir dir = checkAndDo ("Do you really want to remove directory \"" ++ dir ++ "\"?") $ removeDirectoryRecursive dir
 
 command_cpdir :: FilePath -> FilePath -> IO ()
 command_cpdir src dst = do	srcExists <- doesDirectoryExist src
