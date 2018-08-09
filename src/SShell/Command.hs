@@ -162,7 +162,10 @@ command_path_del n = do	paths <- getPaths
 		f x list = (take (x - 1) list) ++ (drop x list)
 
 command_list :: FilePath -> IO ()
-command_list dir = listDirectory dir >>= loop
+command_list dir = do	isFile <- doesFileExist dir
+			if isFile
+				then commandLineError "it is a file"
+				else listDirectory dir >>= loop
 	where
 		loop []			= return ()
 		loop (file:files)	= do	isFile <- doesFileExist (dir ++ "/" ++ file)
