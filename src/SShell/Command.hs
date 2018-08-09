@@ -38,7 +38,7 @@ commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command
 							"view"		-> run tokens 1 (command_view $ tokens !! 0)
 							"chcwd"		-> run tokens 1 (command_chcwd $ tokens !! 0)
 							"pcwd"		-> command_pcwd
-							"path"		-> run tokens 2 $ command_path tokens
+							"path"		-> run tokens 1 $ command_path tokens
 							"list"		-> run tokens 1 (command_list $ tokens !! 0)
 							"version"	-> command_version
 							"exit"		-> command_exit
@@ -142,7 +142,11 @@ getPaths =	(lines <$> readFile pathFileName)
 							else ioError e)
 
 command_path_list :: IO ()
-command_path_list = command_view pathFileName
+command_path_list = getPaths >>= loop (1 :: Integer)
+	where
+		loop _ []		= return ()
+		loop n (path:paths)	= do	putStrLn $ (show n) ++ ":\t" ++ path
+						loop (n + 1) paths
 
 command_path_add :: FilePath -> IO ()
 command_path_add dir = do	isAlreadyFound <- elem dir <$> getPaths
