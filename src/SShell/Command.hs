@@ -98,14 +98,14 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 						listDirectory src >>= loop src dst
 	where
 		loop _ _ []			= return ()
-		loop src' dst' (file:files)	= do	isFile <- doesFileExist src'
+		loop src' dst' (file:files)	= do	isFile <- doesFileExist src''
 							if isFile
-								then copyFileWithMetadata newsrc newdst
-								else command_cpdir newsrc dst'
+								then copyFileWithMetadata src'' dst''
+								else command_cpdir src'' dst''
 							loop src dst files
 			where
-				newsrc = src' ++ "/" ++ file
-				newdst = dst' ++ "/" ++ file
+				src'' = src' ++ "/" ++ file
+				dst'' = dst' ++ "/" ++ file
 
 command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
