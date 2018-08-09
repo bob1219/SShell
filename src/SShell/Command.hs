@@ -111,11 +111,7 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
 
 command_view :: FilePath -> IO ()
-command_view file = (lines <$> readFile file) >>= loop (1 :: Integer)
-	where
-		loop _ []	= return ()
-		loop n (x:xs)	= do	putStrLn $ (show n) ++ ":\t" ++ x
-					loop (n + 1) xs
+command_view file = (lines <$> readFile file) >>= view 1
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
@@ -142,11 +138,7 @@ getPaths =	(lines <$> readFile pathFileName)
 							else ioError e)
 
 command_path_list :: IO ()
-command_path_list = getPaths >>= loop (1 :: Integer)
-	where
-		loop _ []		= return ()
-		loop n (path:paths)	= do	putStrLn $ (show n) ++ ":\t" ++ path
-						loop (n + 1) paths
+command_path_list = getPaths >>= view 1
 
 command_path_add :: FilePath -> IO ()
 command_path_add dir = do	isAlreadyFound <- elem dir <$> getPaths
@@ -244,3 +236,8 @@ tokenizeCommand command = loop command False False "" []
 										_	->	if isEscaped
 													then Nothing
 													else loop cs isQuoted False (temp ++ [c]) result
+
+view :: Integer -> [String] -> IO ()
+view _ []	= return ()
+view n (x:xs)	= do	putStrLn $ (show n) ++ ":\t" ++ x
+			view (n + 1) xs
