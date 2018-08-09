@@ -41,7 +41,7 @@ loop = do	putChar '>'
 											then return ""
 											else unexceptedException e))
 
-		case tokens of	Just tokens'	->	if null tokens
+		case tokens of	Just tokens'	->	if null tokens'
 								then loop
 								else commandProcess tokens'
 				Nothing		->	commandLineError "invalid character alignment"
