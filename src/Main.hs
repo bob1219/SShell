@@ -17,8 +17,8 @@
 
 module Main (main) where
 
-import System.IO	(hSetBuffering, stdout, stdin)
-import SShell.Constant	(version, unexceptedException)
+import System.IO	(hSetBuffering, stdout, stdin, BufferMode(NoBuffering, LineBuffering))
+import SShell.Constant	(version, unexceptedException, commandLineError)
 import SShell.Command	(tokenizeCommand, commandProcess)
 import System.IO.Error	(catchIOError, isEOFError)
 
@@ -38,12 +38,13 @@ main = do	hSetBuffering stdout NoBuffering
 loop :: IO ()
 loop = do	putChar '>'
 		tokens <- tokenizeCommand <$> (getLine `catchIOError` (\e ->	if isEOFError e
-											then loop
+											then return ""
 											else unexceptedException e))
 
-		if null tokens
-			then loop
-			else commandProcess tokens
+		case tokens of	Just tokens'	->	if null tokens'
+								then loop
+								else commandProcess tokens'
+				Nothing		->	commandLineError "invalid character alignment"
 
 		putChar '\n'
 		loop
