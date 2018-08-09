@@ -21,6 +21,7 @@ import System.IO	(hSetBuffering, stdout, stdin, BufferMode(NoBuffering, LineBuff
 import SShell.Constant	(version, unexceptedException, commandLineError)
 import SShell.Command	(tokenizeCommand, commandProcess)
 import System.IO.Error	(catchIOError, isEOFError)
+import System.Directory	(getCurrentDirectory)
 
 main :: IO ()
 main = do	hSetBuffering stdout NoBuffering
@@ -33,18 +34,18 @@ main = do	hSetBuffering stdout NoBuffering
 		putStrLn "This is free software, and you are welcome to redistribute it under certain conditions."
 		putChar '\n'
 
-		loop
+		getCurrentDirectory >>= loop
 
-loop :: IO ()
-loop = do	putChar '>'
+loop :: FilePath -> IO ()
+loop cwd = do	putChar '>'
 		tokens <- tokenizeCommand <$> (getLine `catchIOError` (\e ->	if isEOFError e
 											then return ""
 											else unexceptedException e))
 
 		case tokens of	Just tokens'	->	if null tokens'
-								then loop
-								else commandProcess tokens'
+								then loop cwd
+								else commandProcess tokens' cwd
 				Nothing		->	commandLineError "invalid character alignment"
 
 		putChar '\n'
-		loop
+		loop cwd
