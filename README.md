@@ -103,3 +103,6 @@ History
 -------
 * 1.0.0 (August 9th, 2018)
 	* First Version
+
+* 1.0.1 (August 9th, 2018)
+	* Bugfix path feature
