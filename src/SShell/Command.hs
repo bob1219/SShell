@@ -26,32 +26,32 @@ import System.Process	(createProcess, waitForProcess, proc)
 import System.FilePath	(isAbsolute)
 import System.IO	(openFile, IOMode(ReadMode), hGetContents)
 
-commandProcess :: [String] -> IO ()
-commandProcess []		=	error "got empty list"
-commandProcess (token:tokens)	=	(case token of	"mkfile"	-> run tokens 1 (command_mkfile $ tokens !! 0)
-							"rmfile"	-> run tokens 1 (command_rmfile $ tokens !! 0)
-							"cpfile"	-> run tokens 2 (command_cpfile (tokens !! 0) (tokens !! 1))
-							"renfile"	-> run tokens 2 (command_renfile (tokens !! 0) (tokens !! 1))
-							"mkdir"		-> run tokens 1 (command_mkdir $ tokens !! 0)
-							"rmdir"		-> run tokens 1 (command_rmdir $ tokens !! 0)
-							"cpdir"		-> run tokens 2 (command_cpdir (tokens !! 0) (tokens !! 1))
-							"rendir"	-> run tokens 2 (command_rendir (tokens !! 0) (tokens !! 1))
-							"view"		-> run tokens 1 (command_view $ tokens !! 0)
-							"chcwd"		-> run tokens 1 (command_chcwd $ tokens !! 0)
-							"pcwd"		-> command_pcwd
-							"path"		-> run tokens 1 $ command_path tokens
-							"list"		-> run tokens 1 (command_list $ tokens !! 0)
-							"version"	-> command_version
-							"exit"		-> command_exit
-							_		-> exec (token:tokens))
-						`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
-													| isDoesNotExistError e		-> "it does not exist"
-													| isAlreadyInUseError e		-> "it is already in use"
-													| isFullError e			-> "your device is full"
-													| isEOFError e			-> "eof error"
-													| isIllegalOperation e		-> error "your platform is not supported in SShell"
-													| isPermissionError e		-> "you do not have the permission"
-													| otherwise			-> unexceptedException e)
+commandProcess :: [String] -> FilePath -> IO ()
+commandProcess [] _			=	error "got empty list"
+commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (command_mkfile $ tokens !! 0)
+								"rmfile"	-> run tokens 1 (command_rmfile $ tokens !! 0)
+								"cpfile"	-> run tokens 2 (command_cpfile (tokens !! 0) (tokens !! 1))
+								"renfile"	-> run tokens 2 (command_renfile (tokens !! 0) (tokens !! 1))
+								"mkdir"		-> run tokens 1 (command_mkdir $ tokens !! 0)
+								"rmdir"		-> run tokens 1 (command_rmdir $ tokens !! 0)
+								"cpdir"		-> run tokens 2 (command_cpdir (tokens !! 0) (tokens !! 1))
+								"rendir"	-> run tokens 2 (command_rendir (tokens !! 0) (tokens !! 1))
+								"view"		-> run tokens 1 (command_view $ tokens !! 0)
+								"chcwd"		-> run tokens 1 (command_chcwd $ tokens !! 0)
+								"pcwd"		-> command_pcwd
+								"path"		-> run tokens 1 $ command_path tokens cwd
+								"list"		-> run tokens 1 (command_list $ tokens !! 0)
+								"version"	-> command_version
+								"exit"		-> command_exit
+								_		-> exec (token:tokens) cwd)
+							`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
+														| isDoesNotExistError e		-> "it does not exist"
+														| isAlreadyInUseError e		-> "it is already in use"
+														| isFullError e			-> "your device is full"
+														| isEOFError e			-> "eof error"
+														| isIllegalOperation e		-> error "your platform is not supported in SShell"
+														| isPermissionError e		-> "you do not have the permission"
+														| otherwise			-> unexceptedException e)
 
 
 run :: [String] -> Int -> IO () -> IO ()
@@ -120,41 +120,41 @@ command_chcwd = setCurrentDirectory
 command_pcwd :: IO ()
 command_pcwd = getCurrentDirectory >>= putStrLn
 
-command_path :: [String] -> IO ()
-command_path []		= error "got empty list"
-command_path (arg:args)	= case arg of	"list"	-> command_path_list
-					"add"	-> run args 1 (command_path_add $ args !! 0)
-					"clear"	-> command_path_clear
-					"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n
-												Nothing	-> commandLineError "invalid number"
-					_	-> commandLineError "that command not found"
+command_path :: [String] -> FilePath -> IO ()
+command_path [] _		= error "got empty list"
+command_path (arg:args) cwd	= case arg of	"list"	-> command_path_list cwd
+						"add"	-> run args 1 (command_path_add (args !! 0) cwd)
+						"clear"	-> command_path_clear cwd
+						"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n cwd
+													Nothing	-> commandLineError "invalid number"
+						_	-> commandLineError "that command not found"
 
-pathFileName :: FilePath
-pathFileName = "./../data/PATH"
+pathFileName :: FilePath -> FilePath
+pathFileName cwd = cwd ++ "/../data/PATH"
 
-getPaths :: IO [FilePath]
-getPaths =	(lines <$> ((openFile pathFileName ReadMode) >>= hGetContents))
+getPaths :: FilePath -> IO [FilePath]
+getPaths cwd =	(lines <$> ((openFile (pathFileName cwd) ReadMode) >>= hGetContents))
 			`catchIOError` (\e ->	if isDoesNotExistError e
 							then return []
 							else ioError e)
 
-command_path_list :: IO ()
-command_path_list = getPaths >>= view 1
+command_path_list :: FilePath -> IO ()
+command_path_list cwd = (getPaths cwd) >>= view 1
 
-command_path_add :: FilePath -> IO ()
-command_path_add dir = do	isAlreadyFound <- elem dir <$> getPaths
+command_path_add :: FilePath -> FilePath -> IO ()
+command_path_add dir cwd = do	isAlreadyFound <- elem dir <$> (getPaths cwd)
 				if isAlreadyFound
 					then commandLineError "it is already found in the paths"
-					else appendFile pathFileName (dir ++ "\n")
+					else appendFile (pathFileName cwd) (dir ++ "\n")
 
-command_path_clear :: IO ()
-command_path_clear = writeFile pathFileName ""
+command_path_clear :: FilePath -> IO ()
+command_path_clear cwd = writeFile (pathFileName cwd) ""
 
-command_path_del :: Int -> IO ()
-command_path_del n = do	paths <- getPaths
-			if n < 1 || n > (length paths)
-				then commandLineError "invalid number"
-				else (writeFile pathFileName) . unlines . (f n) $ paths
+command_path_del :: Int -> FilePath -> IO ()
+command_path_del n cwd = do	paths <- getPaths cwd
+				if n < 1 || n > (length paths)
+					then commandLineError "invalid number"
+					else (writeFile $ pathFileName cwd) . unlines . (f n) $ paths
 	where
 		f x list = (take (x - 1) list) ++ (drop x list)
 
@@ -175,16 +175,16 @@ command_version = putStrLn version
 command_exit :: IO a
 command_exit = exitSuccess
 
-exec :: [String] -> IO ()
-exec []			= error "got empty list"
-exec (software:args)	= do	software' <- pathProcess software
-				case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
-										_ <- waitForProcess handle
-										return ()
-							Nothing		-> commandLineError "that command or software not found"
+exec :: [String] -> FilePath -> IO ()
+exec [] _			= error "got empty list"
+exec (software:args) cwd	= do	software' <- pathProcess software cwd
+					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
+											_ <- waitForProcess handle
+											return ()
+								Nothing		-> commandLineError "that command or software not found"
 
-pathProcess :: FilePath -> IO (Maybe FilePath)
-pathProcess software = do	if isAbsolute software
+pathProcess :: FilePath -> FilePath -> IO (Maybe FilePath)
+pathProcess software cwd = do	if isAbsolute software
 					then	do	exists <- doesFileExist software
 							if exists
 								then	return $ Just software
@@ -201,7 +201,7 @@ pathProcess software = do	if isAbsolute software
 									in do	exists' <- doesFileExist software''
 										if exists'
 											then return $ Just software''
-											else do	software''' <- (getPaths >>= loop software)
+											else do	software''' <- ((getPaths cwd) >>= loop software)
 												case software''' of	Just _	-> return software'''
 															Nothing	-> return Nothing
 	where
