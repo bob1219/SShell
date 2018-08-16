@@ -132,7 +132,7 @@ pathFileName :: FilePath -> FilePath
 pathFileName cwd = cwd ++ "/../data/PATH"
 
 getPaths :: FilePath -> IO [FilePath]
-getPaths cwd =	(lines <$> ((openFile (pathFileName cwd) ReadMode) >>= hGetContents))
+getPaths cwd =	(lines <$> (openFile (pathFileName cwd) ReadMode >>= hGetContents))
 			`catchIOError` (\e ->	if isDoesNotExistError e
 							then return []
 							else ioError e)
