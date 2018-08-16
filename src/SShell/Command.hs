@@ -200,7 +200,7 @@ pathProcess software cwd = do	if isAbsolute software
 									in do	exists' <- doesFileExist software''
 										if exists'
 											then return $ Just software''
-											else do	software''' <- ((getPaths cwd) >>= loop software)
+											else do	software''' <- (getPaths cwd >>= loop software)
 												case software''' of	Just _	-> return software'''
 															Nothing	-> return Nothing
 	where
