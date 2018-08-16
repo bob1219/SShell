@@ -49,10 +49,9 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 														| isAlreadyInUseError e		-> "it is already in use"
 														| isFullError e			-> "your device is full"
 														| isEOFError e			-> "eof error"
-														| isIllegalOperation e		-> error "your platform is not supported in SShell"
+														| isIllegalOperation e		-> error "illegal operation occured"
 														| isPermissionError e		-> "you do not have the permission"
 														| otherwise			-> unexceptedException e)
-
 
 run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f
@@ -112,7 +111,7 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
 
 command_view :: FilePath -> IO ()
-command_view file = (readFile file) >>= ((view 1) . lines)
+command_view file = readFile file >>= (view 1) . lines
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
@@ -133,13 +132,13 @@ pathFileName :: FilePath -> FilePath
 pathFileName cwd = cwd ++ "/../data/PATH"
 
 getPaths :: FilePath -> IO [FilePath]
-getPaths cwd =	(lines <$> ((openFile (pathFileName cwd) ReadMode) >>= hGetContents))
+getPaths cwd =	(lines <$> (openFile (pathFileName cwd) ReadMode >>= hGetContents))
 			`catchIOError` (\e ->	if isDoesNotExistError e
 							then return []
 							else ioError e)
 
 command_path_list :: FilePath -> IO ()
-command_path_list cwd = (getPaths cwd) >>= view 1
+command_path_list cwd = getPaths cwd >>= view 1
 
 command_path_add :: FilePath -> FilePath -> IO ()
 command_path_add dir cwd = do	isAlreadyFound <- elem dir <$> (getPaths cwd)
@@ -165,7 +164,7 @@ command_list dir = do	isFile <- doesFileExist dir
 				else listDirectory dir >>= loop
 	where
 		loop []			= return ()
-		loop (file:files)	= do	isFile <- doesFileExist (dir ++ "/" ++ file)
+		loop (file:files)	= do	isFile <- doesFileExist $ dir ++ "/" ++ file
 						putStrLn $ (if isFile then "file" else "dir") ++ ":\t" ++ file
 						loop files
 
@@ -178,7 +177,7 @@ command_exit = exitSuccess
 exec :: [String] -> FilePath -> IO ()
 exec [] _			= error "got empty list"
 exec (software:args) cwd	= do	software' <- pathProcess software cwd
-					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
+					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess $ proc software'' args
 											_ <- waitForProcess handle
 											return ()
 								Nothing		-> commandLineError "that command or software not found"
@@ -201,7 +200,7 @@ pathProcess software cwd = do	if isAbsolute software
 									in do	exists' <- doesFileExist software''
 										if exists'
 											then return $ Just software''
-											else do	software''' <- ((getPaths cwd) >>= loop software)
+											else do	software''' <- (getPaths cwd >>= loop software)
 												case software''' of	Just _	-> return software'''
 															Nothing	-> return Nothing
 	where
@@ -223,7 +222,7 @@ tokenizeCommand command = loop command False False "" []
 								| otherwise	= Just (if temp == "" then result else (result ++ [temp]))
 		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
 													then loop cs True False (temp ++ ['\'']) result
-													else loop cs (not isQuoted) False "" (result ++ (if temp == "" then [] else [temp]))
+													else loop cs (not isQuoted) False "" $ result ++ (if temp == "" then [] else [temp])
 										'\\'	->	if isEscaped
 													then	loop cs True False (temp ++ ['\\']) result
 													else	if isQuoted
@@ -233,7 +232,7 @@ tokenizeCommand command = loop command False False "" []
 													then	Nothing
 													else	if isQuoted
 															then loop cs True False (temp ++ [' ']) result
-															else loop cs False False "" (if temp == "" then result else result ++ (if temp == "" then [] else [temp]))
+															else loop cs False False "" $ if temp == "" then result else result ++ (if temp == "" then [] else [temp])
 										_	->	if isEscaped
 													then Nothing
 													else loop cs isQuoted False (temp ++ [c]) result
