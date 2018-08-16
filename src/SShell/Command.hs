@@ -138,7 +138,7 @@ getPaths cwd =	(lines <$> (openFile (pathFileName cwd) ReadMode >>= hGetContents
 							else ioError e)
 
 command_path_list :: FilePath -> IO ()
-command_path_list cwd = (getPaths cwd) >>= view 1
+command_path_list cwd = getPaths cwd >>= view 1
 
 command_path_add :: FilePath -> FilePath -> IO ()
 command_path_add dir cwd = do	isAlreadyFound <- elem dir <$> (getPaths cwd)
