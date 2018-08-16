@@ -177,7 +177,7 @@ command_exit = exitSuccess
 exec :: [String] -> FilePath -> IO ()
 exec [] _			= error "got empty list"
 exec (software:args) cwd	= do	software' <- pathProcess software cwd
-					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess (proc software'' args)
+					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess $ proc software'' args
 											_ <- waitForProcess handle
 											return ()
 								Nothing		-> commandLineError "that command or software not found"
