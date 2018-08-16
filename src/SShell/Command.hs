@@ -111,7 +111,7 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir = renameDirectory
 
 command_view :: FilePath -> IO ()
-command_view file = (readFile file) >>= ((view 1) . lines)
+command_view file = readFile file >>= (view 1) . lines
 
 command_chcwd :: FilePath -> IO ()
 command_chcwd = setCurrentDirectory
