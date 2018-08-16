@@ -106,3 +106,6 @@ History
 
 * 1.0.1 (August 9th, 2018)
 	* Bugfix path feature
+
+* 1.0.2 (August 16th, 2018)
+	* Modify an error message
