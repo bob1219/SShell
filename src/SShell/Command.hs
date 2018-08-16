@@ -49,10 +49,9 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 														| isAlreadyInUseError e		-> "it is already in use"
 														| isFullError e			-> "your device is full"
 														| isEOFError e			-> "eof error"
-														| isIllegalOperation e		-> error "your platform is not supported in SShell"
+														| isIllegalOperation e		-> error "illegal operation occured"
 														| isPermissionError e		-> "you do not have the permission"
 														| otherwise			-> unexceptedException e)
-
 
 run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f
