@@ -115,3 +115,6 @@ History
 	* Addition alert to denger feature
 	* Modify view command and list command path-list command
 	* Modify cpfile command and renfile command and cpdir command and rendir command
+
+* 1.0.4 (August 17th, 2018)
+	* Delete invalid-character-alignment error
