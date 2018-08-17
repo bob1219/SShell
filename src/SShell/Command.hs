@@ -155,7 +155,7 @@ command_path_del :: Int -> FilePath -> IO ()
 command_path_del n cwd = do	paths <- getPaths cwd
 				if n < 1 || n > (length paths)
 					then commandLineError "invalid number"
-					else (writeFile $ pathFileName cwd) . unlines . (f n) $ paths
+					else (writeFile . pathFileName $ cwd) . unlines . (f n) $ paths
 	where
 		f x list = (take (x - 1) list) ++ (drop x list)
 
