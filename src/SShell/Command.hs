@@ -18,7 +18,7 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectoryRecursive, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
-import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError, ioError)
+import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException, version, commandLineError)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
@@ -145,7 +145,7 @@ getPaths :: FilePath -> IO [FilePath]
 getPaths cwd = do	exists <- doesFileExist pathFile
 			if exists
 				then lines <$> (openFile pathFile ReadMode >>= hGetContents)
-				else []
+				else return []
 	where
 		pathFile = pathFileName cwd
 
