@@ -241,5 +241,5 @@ tokenizeCommand command = loop command False False "" []
 
 view :: Integer -> [String] -> IO ()
 view _ []	= return ()
-view n (x:xs)	= do	putStrLn $ (show n) ++ ":\t" ++ x
+view n (x:xs)	= do	putStrLn $ (show n) ++ "\t: " ++ x
 			view (n + 1) xs
