@@ -143,8 +143,8 @@ command_path_list :: FilePath -> IO ()
 command_path_list cwd = getPaths cwd >>= view 1
 
 command_path_add :: FilePath -> FilePath -> IO ()
-command_path_add dir cwd = do	isAlreadyFound <- elem dir <$> (getPaths cwd)
-				if isAlreadyFound
+command_path_add dir cwd = do	exists <- elem dir <$> (getPaths cwd)
+				if exists
 					then commandLineError "it is already found in the paths"
 					else appendFile (pathFileName cwd) (dir ++ "\n")
 
