@@ -83,7 +83,10 @@ command_cpfile src dst = do	dstExists <- doesFileExist dst
 					else copyFileWithMetadata src dst
 
 command_renfile :: FilePath -> FilePath -> IO ()
-command_renfile = renameFile
+command_renfile src dst = do	dstExists <- doesFileExist dst
+				if dstExists
+					then commandLineError "dst file already exists"
+					else renameFile src dst
 
 command_mkdir :: FilePath -> IO ()
 command_mkdir = createDirectory
