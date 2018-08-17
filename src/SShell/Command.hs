@@ -167,7 +167,7 @@ command_list dir = do	isFile <- doesFileExist dir
 	where
 		loop []			= return ()
 		loop (file:files)	= do	isFile <- doesFileExist $ dir ++ "/" ++ file
-						putStrLn $ (if isFile then "file" else "dir") ++ ":\t" ++ file
+						putStrLn $ (if isFile then "file" else "dir") ++ "\t: " ++ file
 						loop files
 
 command_version :: IO ()
