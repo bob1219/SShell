@@ -6,6 +6,7 @@ print "(1:Take over from other SShell, 2:Setup new SShell)\n";
 while(1) {
 	print ">";
 	chomp(my $select = <STDIN>);
+
 	if($select == "1") {
 		&take_over;
 		last;
@@ -18,12 +19,16 @@ while(1) {
 sub take_over {
 	print "old SShell's directory: ";
 	chomp(my $directory = <STDIN>);
-	copy("$directory/data/PATH", "./data/PATH");
+	copy("$directory/data/PATH", "./data/PATH") or &error("failed copy path-file");
 }
 
 sub setup {
+	open(my $fh, "<", "./data/PATH") or &error("failed open path-file");
 	print "Paths:\n";
-	my @paths = <STDIN>;
-	open(PATHS, "> ./data/PATH") or die "Error: failed open path-file\n";
-	print PATHS $_ for @paths;
+	print $fh $_ while <STDIN>;
+}
+
+sub error {
+	my ($message) = @_;
+	die "Error: $message\n";
 }

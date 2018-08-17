@@ -22,7 +22,7 @@ import Control.Exception	(displayException)
 import System.IO		(hPutStrLn, stderr)
 
 version :: String
-version = "1.0.2"
+version = "1.0.3"
 
 unexceptedException :: IOError -> a
 unexceptedException e = error $ "an unexcepted exception occured: " ++ (displayException e)

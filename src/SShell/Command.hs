@@ -18,13 +18,14 @@
 module SShell.Command (commandProcess, tokenizeCommand) where
 
 import System.Directory	(doesFileExist, removeFile, copyFileWithMetadata, renameFile, createDirectory, removeDirectoryRecursive, doesDirectoryExist, listDirectory, renameDirectory, setCurrentDirectory, getCurrentDirectory, exeExtension)
-import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError, ioError)
+import System.IO.Error	(catchIOError, isAlreadyExistsError, isDoesNotExistError, isAlreadyInUseError, isFullError, isEOFError, isIllegalOperation, isPermissionError)
 import SShell.Constant	(unexceptedException, version, commandLineError)
 import Text.Read	(readMaybe)
 import System.Exit	(exitSuccess)
 import System.Process	(createProcess, waitForProcess, proc)
 import System.FilePath	(isAbsolute)
 import System.IO	(openFile, IOMode(ReadMode), hGetContents)
+import Data.List	(findIndex)
 
 commandProcess :: [String] -> FilePath -> IO ()
 commandProcess [] _			=	error "got empty list"
@@ -42,7 +43,6 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 								"path"		-> run tokens 1 $ command_path tokens cwd
 								"list"		-> run tokens 1 (command_list $ tokens !! 0)
 								"version"	-> command_version
-								"clear"		-> command_clear
 								"exit"		-> command_exit
 								_		-> exec (token:tokens) cwd)
 							`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
@@ -57,11 +57,27 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 run :: [String] -> Int -> IO () -> IO ()
 run tokens n f = if (length tokens) < n then commandLineError "few args" else f
 
+checkInvalidPath :: FilePath -> IO () -> IO ()
+checkInvalidPath file f =	if findIndex g file == Nothing
+					then f
+					else commandLineError "invalid character alignment"
+	where
+		g '\\'	= True
+		g '/'	= True
+		g ':'	= True
+		g '*'	= True
+		g '?'	= True
+		g '"'	= True
+		g '<'	= True
+		g '>'	= True
+		g '|'	= True
+		g _	= False
+
 command_mkfile :: FilePath -> IO ()
 command_mkfile file = do	exists <- doesFileExist file
 				if exists
 					then commandLineError "that file already exists"
-					else writeFile file ""
+					else checkInvalidPath file (writeFile file "")
 
 checkAndDo :: String -> IO () -> IO ()
 checkAndDo message f = do	putStrLn $ "Do you really want to " ++ message ++ "? (y/n)\a"
@@ -74,35 +90,35 @@ checkAndDo message f = do	putStrLn $ "Do you really want to " ++ message ++ "? (
 						_	-> loop
 
 command_rmfile :: FilePath -> IO ()
-command_rmfile file = checkAndDo ("remove file \"" ++ file ++ "\"") $ removeFile file
+command_rmfile file = checkAndDo ("remove file \"" ++ file ++ "\"") $ checkInvalidPath file (removeFile file)
 
 command_cpfile :: FilePath -> FilePath -> IO ()
 command_cpfile src dst = do	dstExists <- doesFileExist dst
 				if dstExists
 					then commandLineError "dst file already exists"
-					else copyFileWithMetadata src dst
+					else checkInvalidPath src (checkInvalidPath dst (copyFileWithMetadata src dst))
 
 command_renfile :: FilePath -> FilePath -> IO ()
 command_renfile src dst = do	dstExists <- doesFileExist dst
 				if dstExists
 					then commandLineError "dst file already exists"
-					else renameFile src dst
+					else checkInvalidPath src (checkInvalidPath dst (renameFile src dst))
 
 command_mkdir :: FilePath -> IO ()
-command_mkdir = createDirectory
+command_mkdir dir = checkInvalidPath dir (createDirectory dir)
 
 command_rmdir :: FilePath -> IO ()
-command_rmdir dir = checkAndDo ("remove directory \"" ++ dir ++ "\"") $ removeDirectoryRecursive dir
+command_rmdir dir = checkAndDo ("remove directory \"" ++ dir ++ "\"") $ checkInvalidPath dir (removeDirectoryRecursive dir)
 
 command_cpdir :: FilePath -> FilePath -> IO ()
-command_cpdir src dst = do	srcExists <- doesDirectoryExist src
-				if not srcExists
-					then commandLineError "it does not exist"
-					else do	dstExists <- doesDirectoryExist dst
-						if dstExists
-							then commandLineError "dst dir already exists"
-							else createDirectory dst
-						listDirectory src >>= loop src dst
+command_cpdir src dst = checkInvalidPath src (checkInvalidPath dst (do	srcExists <- doesDirectoryExist src
+									if not srcExists
+										then commandLineError "it does not exist"
+										else do	dstExists <- doesDirectoryExist dst
+											if dstExists
+												then commandLineError "dst dir already exists"
+												else createDirectory dst
+											listDirectory src >>= loop src dst))
 	where
 		loop _ _ []			= return ()
 		loop src' dst' (file:files)	= do	isFile <- doesFileExist src''
@@ -118,13 +134,13 @@ command_rendir :: FilePath -> FilePath -> IO ()
 command_rendir src dst = do	dstExists <- doesDirectoryExist dst
 				if dstExists
 					then commandLineError "dst dir already exists"
-					else renameDirectory src dst
+					else checkInvalidPath src (checkInvalidPath dst (renameDirectory src dst))
 
 command_view :: FilePath -> IO ()
-command_view file = readFile file >>= (view 1) . lines
+command_view file = checkInvalidPath file (readFile file >>= (view 1) . lines)
 
 command_chcwd :: FilePath -> IO ()
-command_chcwd = setCurrentDirectory
+command_chcwd dir = checkInvalidPath dir (setCurrentDirectory dir)
 
 command_pcwd :: IO ()
 command_pcwd = getCurrentDirectory >>= putStrLn
@@ -132,7 +148,7 @@ command_pcwd = getCurrentDirectory >>= putStrLn
 command_path :: [String] -> FilePath -> IO ()
 command_path [] _		= error "got empty list"
 command_path (arg:args) cwd	= case arg of	"list"	-> command_path_list cwd
-						"add"	-> run args 1 $ command_path_add (args !! 0) cwd
+						"add"	-> run args 1 $ checkInvalidPath (args !! 0) (command_path_add (args !! 0) cwd)
 						"clear"	-> command_path_clear cwd
 						"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n cwd
 													Nothing	-> commandLineError "invalid number"
@@ -145,7 +161,7 @@ getPaths :: FilePath -> IO [FilePath]
 getPaths cwd = do	exists <- doesFileExist pathFile
 			if exists
 				then lines <$> (openFile pathFile ReadMode >>= hGetContents)
-				else []
+				else return []
 	where
 		pathFile = pathFileName cwd
 
@@ -170,32 +186,29 @@ command_path_del n cwd = do	paths <- getPaths cwd
 		f x list = (take (x - 1) list) ++ (drop x list)
 
 command_list :: FilePath -> IO ()
-command_list dir = do	isFile <- doesFileExist dir
-			if isFile
-				then commandLineError "it is a file"
-				else listDirectory dir >>= loop
+command_list dir = checkInvalidPath dir (do	isFile <- doesFileExist dir
+						if isFile
+							then commandLineError "it is a file"
+							else listDirectory dir >>= loop)
 	where
 		loop []			= return ()
 		loop (file:files)	= do	isFile <- doesFileExist $ dir ++ "/" ++ file
-						putStrLn $ (if isFile then "file" else "dir") ++ "\t: " ++ file
+						putStrLn $ (if isFile then "file" else "dir") ++ "\t" ++ file
 						loop files
 
 command_version :: IO ()
 command_version = putStrLn version
-
-command_clear :: IO ()
-command_clear = putStr "\ESC[2J"
 
 command_exit :: IO a
 command_exit = exitSuccess
 
 exec :: [String] -> FilePath -> IO ()
 exec [] _			= error "got empty list"
-exec (software:args) cwd	= do	software' <- pathProcess software cwd
-					case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess $ proc software'' args
-											_ <- waitForProcess handle
-											return ()
-								Nothing		-> commandLineError "that command or software not found"
+exec (software:args) cwd	= checkInvalidPath software (do	software' <- pathProcess software cwd
+								case software' of	Just software''	-> do	(_, _, _, handle) <- createProcess $ proc software'' args
+														_ <- waitForProcess handle
+														return ()
+											Nothing		-> commandLineError "that command or software not found")
 
 pathProcess :: FilePath -> FilePath -> IO (Maybe FilePath)
 pathProcess software cwd = do	if isAbsolute software
@@ -254,5 +267,5 @@ tokenizeCommand command = loop command False False "" []
 
 view :: Integer -> [String] -> IO ()
 view _ []	= return ()
-view n (x:xs)	= do	putStrLn $ (show n) ++ "\t: " ++ x
+view n (x:xs)	= do	putStrLn $ (show n) ++ "\t" ++ x
 			view (n + 1) xs
