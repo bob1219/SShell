@@ -115,7 +115,10 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 				dst'' = dst' ++ "/" ++ file
 
 command_rendir :: FilePath -> FilePath -> IO ()
-command_rendir = renameDirectory
+command_rendir src dst = do	dstExists <- doesDirectoryExist dst
+				if dstExists
+					then commandLineError "dst dir already exists"
+					else renameDirectory src dst
 
 command_view :: FilePath -> IO ()
 command_view file = readFile file >>= (view 1) . lines
