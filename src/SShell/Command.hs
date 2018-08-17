@@ -77,7 +77,10 @@ command_rmfile :: FilePath -> IO ()
 command_rmfile file = checkAndDo ("remove file \"" ++ file ++ "\"") $ removeFile file
 
 command_cpfile :: FilePath -> FilePath -> IO ()
-command_cpfile = copyFileWithMetadata
+command_cpfile src dst = do	dstExists <- doesFileExist dst
+				if dstExists
+					then commandLineError "dst file already exists"
+					else copyFileWithMetadata src dst
 
 command_renfile :: FilePath -> FilePath -> IO ()
 command_renfile = renameFile
