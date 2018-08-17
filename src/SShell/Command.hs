@@ -99,9 +99,9 @@ command_cpdir src dst = do	srcExists <- doesDirectoryExist src
 				if not srcExists
 					then commandLineError "it does not exist"
 					else do	dstExists <- doesDirectoryExist dst
-						if not dstExists
-							then createDirectory dst
-							else return ()
+						if dstExists
+							then commandLineError "dst dir already exists"
+							else createDirectory dst
 						listDirectory src >>= loop src dst
 	where
 		loop _ _ []			= return ()
