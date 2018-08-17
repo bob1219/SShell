@@ -122,7 +122,7 @@ command_pcwd = getCurrentDirectory >>= putStrLn
 command_path :: [String] -> FilePath -> IO ()
 command_path [] _		= error "got empty list"
 command_path (arg:args) cwd	= case arg of	"list"	-> command_path_list cwd
-						"add"	-> run args 1 (command_path_add (args !! 0) cwd)
+						"add"	-> run args 1 $ command_path_add (args !! 0) cwd
 						"clear"	-> command_path_clear cwd
 						"del"	-> run args 1 $ case readMaybe (args !! 0) of	Just n	-> command_path_del n cwd
 													Nothing	-> commandLineError "invalid number"
