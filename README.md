@@ -109,3 +109,9 @@ History
 
 * 1.0.2 (August 16th, 2018)
 	* Modify an error message
+
+* 1.0.3 (August 17th, 2018)
+	* Bugfix invalid-character-alignment-bug
+	* Addition alert to denger feature
+	* Modify view command and list command path-list command
+	* Modify cpfile command and renfile command and cpdir command and rendir command
