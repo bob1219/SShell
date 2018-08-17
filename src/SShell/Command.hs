@@ -42,6 +42,7 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 								"path"		-> run tokens 1 $ command_path tokens cwd
 								"list"		-> run tokens 1 (command_list $ tokens !! 0)
 								"version"	-> command_version
+								"clear"		-> command_clear
 								"exit"		-> command_exit
 								_		-> exec (token:tokens) cwd)
 							`catchIOError` (\e -> commandLineError $ case e of _	| isAlreadyExistsError e	-> "it already exists"
@@ -172,6 +173,9 @@ command_list dir = do	isFile <- doesFileExist dir
 
 command_version :: IO ()
 command_version = putStrLn version
+
+command_clear :: IO ()
+command_clear = putStr "\ESC[2J"
 
 command_exit :: IO a
 command_exit = exitSuccess
