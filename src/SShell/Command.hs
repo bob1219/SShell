@@ -49,7 +49,7 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 														| isAlreadyInUseError e		-> "it is already in use"
 														| isFullError e			-> "your device is full"
 														| isEOFError e			-> "eof error"
-														| isIllegalOperation e		-> error "illegal operation occured"
+														| isIllegalOperation e		-> "that operation is illegal"
 														| isPermissionError e		-> "you do not have the permission"
 														| otherwise			-> unexceptedException e)
 
