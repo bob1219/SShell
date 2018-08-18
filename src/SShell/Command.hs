@@ -231,8 +231,8 @@ tokenizeCommand :: String -> Maybe [String]
 tokenizeCommand command = loop command False False "" []
 	where
 		loop [] True _ _ _				= Nothing
-		loop [] _ _ "" result				= result
-		loop [] _ _ temp result				= result ++ [temp]
+		loop [] _ _ "" result				= Just result
+		loop [] _ _ temp result				= Just $ result ++ [temp]
 		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
 													then loop cs True False (temp ++ ['\'']) result
 													else loop cs (not isQuoted) False "" $ result ++ (if temp == "" then [] else [temp])
