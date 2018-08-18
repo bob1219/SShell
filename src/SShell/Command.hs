@@ -123,7 +123,7 @@ command_view :: FilePath -> IO ()
 command_view file = openFile file ReadMode >>= hGetContents >>= (view 1) . lines
 
 command_chcwd :: FilePath -> IO ()
-command_chcwd dir = setCurrentDirectory dir
+command_chcwd = setCurrentDirectory
 
 command_pcwd :: IO ()
 command_pcwd = getCurrentDirectory >>= putStrLn
@@ -229,8 +229,9 @@ pathProcess software cwd = do	if isAbsolute software
 tokenizeCommand :: String -> Maybe [String]
 tokenizeCommand command = loop command False False "" []
 	where
-		loop [] isQuoted _ temp result			| isQuoted	= Nothing
-								| otherwise	= Just (if temp == "" then result else (result ++ [temp]))
+		loop [] True _ _ _				= Nothing
+		loop [] _ _ "" result				= result
+		loop [] _ _ temp result				= result ++ [temp]
 		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
 													then loop cs True False (temp ++ ['\'']) result
 													else loop cs (not isQuoted) False "" $ result ++ (if temp == "" then [] else [temp])
