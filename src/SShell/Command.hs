@@ -54,7 +54,8 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 														| otherwise			-> unexceptedException e)
 
 run :: [String] -> Int -> IO () -> IO ()
-run tokens n f = if (length tokens) < n then commandLineError "few args" else f
+run tokens n f	| (length tokens) < n	= commandLineError "few args"
+		| otherwise		= f
 
 command_mkfile :: FilePath -> IO ()
 command_mkfile file = do	exists <- doesFileExist file
