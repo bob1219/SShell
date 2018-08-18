@@ -64,7 +64,7 @@ command_mkfile file = do	exists <- doesFileExist file
 					else writeFile file ""
 
 checkAndDo :: String -> IO () -> IO ()
-checkAndDo message f = do	putStrLn $ "Do you really want to " ++ message ++ "? (y/n)\a"
+checkAndDo message f = do	putStrLn $ "\aDo you really want to " ++ message ++ "? (y/n)"
 				loop
 	where
 		loop = do	putChar '>'
