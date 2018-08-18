@@ -54,7 +54,8 @@ commandProcess (token:tokens) cwd	=	(case token of	"mkfile"	-> run tokens 1 (com
 														| otherwise			-> unexceptedException e)
 
 run :: [String] -> Int -> IO () -> IO ()
-run tokens n f = if (length tokens) < n then commandLineError "few args" else f
+run tokens n f	| (length tokens) < n	= commandLineError "few args"
+		| otherwise		= f
 
 command_mkfile :: FilePath -> IO ()
 command_mkfile file = do	exists <- doesFileExist file
@@ -63,7 +64,7 @@ command_mkfile file = do	exists <- doesFileExist file
 					else writeFile file ""
 
 checkAndDo :: String -> IO () -> IO ()
-checkAndDo message f = do	putStrLn $ "Do you really want to " ++ message ++ "? (y/n)\a"
+checkAndDo message f = do	putStrLn $ "\aDo you really want to " ++ message ++ "? (y/n)"
 				loop
 	where
 		loop = do	putChar '>'
@@ -123,7 +124,7 @@ command_view :: FilePath -> IO ()
 command_view file = openFile file ReadMode >>= hGetContents >>= (view 1) . lines
 
 command_chcwd :: FilePath -> IO ()
-command_chcwd dir = setCurrentDirectory dir
+command_chcwd = setCurrentDirectory
 
 command_pcwd :: IO ()
 command_pcwd = getCurrentDirectory >>= putStrLn
@@ -229,8 +230,9 @@ pathProcess software cwd = do	if isAbsolute software
 tokenizeCommand :: String -> Maybe [String]
 tokenizeCommand command = loop command False False "" []
 	where
-		loop [] isQuoted _ temp result			| isQuoted	= Nothing
-								| otherwise	= Just (if temp == "" then result else (result ++ [temp]))
+		loop [] True _ _ _				= Nothing
+		loop [] _ _ "" result				= Just result
+		loop [] _ _ temp result				= Just $ result ++ [temp]
 		loop (c:cs) isQuoted isEscaped temp result	= case c of	'\''	->	if isEscaped
 													then loop cs True False (temp ++ ['\'']) result
 													else loop cs (not isQuoted) False "" $ result ++ (if temp == "" then [] else [temp])
