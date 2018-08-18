@@ -118,3 +118,6 @@ History
 
 * 1.0.4 (August 17th, 2018)
 	* Delete invalid-character-alignment error
+
+* 1.0.5 (August 18th, 2018)
+	* Modify rmfile command and rmdir command
